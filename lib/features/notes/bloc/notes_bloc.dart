@@ -12,6 +12,12 @@ sealed class NoteState {}
 
 final class GetNotesEvent extends NoteEvent {}
 
+final class SearchNotesEvent extends NoteEvent {
+  SearchNotesEvent(this.query);
+
+  final String query;
+}
+
 final class NewNoteCreated extends NoteEvent {
   NewNoteCreated(this.note);
 
@@ -31,24 +37,40 @@ final class NoteDeleted extends NoteEvent {
 }
 
 class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
-  final INotesCache _cache;
-
   NotesBloc({INotesCache? cache})
     : _cache = cache ?? GetIt.I<INotesCache>(),
       super([]) {
     on<GetNotesEvent>(_getNotes);
-
+    on<SearchNotesEvent>(_filterNotes);
     on<NewNoteCreated>(_addNewNote);
-
     on<NoteUpdated>(_updateNote);
-
     on<NoteDeleted>(_deleteNote);
+  }
+
+  final INotesCache _cache;
+
+  List<NoteModel> _notes = [];
+
+  FutureOr<void> _filterNotes(
+    SearchNotesEvent event,
+    Emitter<List<NoteModel>> emit,
+  ) async {
+    final notes =
+        _notes.where((note) {
+          if (event.query.isEmpty) {
+            return true;
+          }
+          return ('${note.title}\n${note.content ?? ''}')
+              .toLowerCase()
+              .contains(event.query.toLowerCase());
+        }).toList();
+    emit(notes);
   }
 
   FutureOr<void> _deleteNote(NoteDeleted event, Emitter<List<NoteModel>> emit) {
     final updatedNotes =
         state.where((note) => note.id != event.note.id).toList();
-    _cache.saveNotes(updatedNotes);
+    _updateList(updatedNotes);
     emit(updatedNotes);
   }
 
@@ -60,7 +82,7 @@ class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
           }
           return note;
         }).toList();
-    _cache.saveNotes(updatedNotes);
+    _updateList(updatedNotes);
     emit(updatedNotes);
   }
 
@@ -69,7 +91,7 @@ class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
     Emitter<List<NoteModel>> emit,
   ) async {
     final newList = [...state, event.note];
-    _cache.saveNotes(newList);
+    _updateList(newList);
     emit(newList);
   }
 
@@ -78,6 +100,12 @@ class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
     Emitter<List<NoteModel>> emit,
   ) async {
     final notes = await _cache.getNotes();
+    _notes = notes;
     emit(notes);
+  }
+
+  void _updateList(List<NoteModel> notes) {
+    _notes = notes;
+    _cache.saveNotes(notes);
   }
 }

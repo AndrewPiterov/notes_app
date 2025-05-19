@@ -18,22 +18,38 @@ class _NoteListPageState extends State<NoteListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Notes')),
-      body: BlocBuilder<NotesBloc, List<NoteModel>>(
-        builder: (context, state) {
-          final list = state;
-
-          if (list.isEmpty) {
-            return const Center(child: Text('No notes yet'));
-          }
-
-          return ListView.builder(
-            itemCount: list.length,
-            itemBuilder: (_, index) {
-              final note = list[index];
-              return NoteListItem(key: ValueKey(note.id), note);
+      body: Column(
+        children: [
+          TextField(
+            onChanged: (value) {
+              context.read<NotesBloc>().add(SearchNotesEvent(value));
             },
-          );
-        },
+            decoration: const InputDecoration(
+              labelText: 'Search',
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: BlocBuilder<NotesBloc, List<NoteModel>>(
+              builder: (context, state) {
+                final list = state;
+
+                if (list.isEmpty) {
+                  return const Center(child: Text('No notes yet'));
+                }
+
+                return ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (_, index) {
+                    final note = list[index];
+                    return NoteListItem(key: ValueKey(note.id), note);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
