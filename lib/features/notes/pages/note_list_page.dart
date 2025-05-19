@@ -20,14 +20,26 @@ class _NoteListPageState extends State<NoteListPage> {
       appBar: AppBar(title: const Text('Notes')),
       body: Column(
         children: [
-          TextField(
-            onChanged: (value) {
-              context.read<NotesBloc>().add(SearchNotesEvent(value));
-            },
-            decoration: const InputDecoration(
-              labelText: 'Search',
-              prefixIcon: Icon(Icons.search),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  onChanged: (value) {
+                    context.read<NotesBloc>().add(SearchNotesEvent(value));
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.sort),
+                onPressed: () {
+                  context.read<NotesBloc>().add(ToggleSortNotesEvent());
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Expanded(

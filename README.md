@@ -31,7 +31,7 @@ Notes App - A simple notes app built with Flutter and Dart.
 
 ✅ Поиск по заметкам
 
-☑️ Сортировка по дате
+✅ Сортировка по дате
 
 ☑️ Поддержка Flutter Web или Desktop
 

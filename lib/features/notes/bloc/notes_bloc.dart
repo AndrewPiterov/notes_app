@@ -12,6 +12,8 @@ sealed class NoteState {}
 
 final class GetNotesEvent extends NoteEvent {}
 
+final class ToggleSortNotesEvent extends NoteEvent {}
+
 final class SearchNotesEvent extends NoteEvent {
   SearchNotesEvent(this.query);
 
@@ -41,30 +43,50 @@ class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
     : _cache = cache ?? GetIt.I<INotesCache>(),
       super([]) {
     on<GetNotesEvent>(_getNotes);
-    on<SearchNotesEvent>(_filterNotes);
+
     on<NewNoteCreated>(_addNewNote);
     on<NoteUpdated>(_updateNote);
     on<NoteDeleted>(_deleteNote);
+
+    on<SearchNotesEvent>((event, emit) {
+      _query = event.query;
+      final notes = _filterNotes();
+      emit(notes);
+    });
+    on<ToggleSortNotesEvent>((event, emit) {
+      _sortDescending = !_sortDescending;
+      final notes = _filterNotes();
+      emit(notes);
+    });
   }
+
+  String _query = '';
+  bool _sortDescending = false;
 
   final INotesCache _cache;
 
   List<NoteModel> _notes = [];
 
-  FutureOr<void> _filterNotes(
-    SearchNotesEvent event,
-    Emitter<List<NoteModel>> emit,
-  ) async {
+  List<NoteModel> _filterNotes() {
+    // Filter the notes based on the search query
     final notes =
         _notes.where((note) {
-          if (event.query.isEmpty) {
+          if (_query.isEmpty) {
             return true;
           }
           return ('${note.title}\n${note.content ?? ''}')
               .toLowerCase()
-              .contains(event.query.toLowerCase());
+              .contains(_query.toLowerCase());
         }).toList();
-    emit(notes);
+
+    // Sort the notes based on the createdAt date
+    if (_sortDescending) {
+      notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    } else {
+      notes.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+
+    return notes;
   }
 
   FutureOr<void> _deleteNote(NoteDeleted event, Emitter<List<NoteModel>> emit) {
