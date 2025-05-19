@@ -2,6 +2,11 @@
 
 Notes App - A simple notes app built with Flutter and Dart.
 
+## Screenshots
+
+
+<img src="screenshots/home_page.png" height="400" />
+
 ## Как запустить проект
 
 1. `dart pub get`
@@ -20,12 +25,6 @@ Notes App - A simple notes app built with Flutter and Dart.
 
 ## Доп. фичи
 
-### Поиск по заметкам
-
-Поиск по заметкам реализован с помощью `Bloc` и `TextField`. При вводе текста в поле поиска, заметки фильтруются по заголовку и содержимому.
-
-
-## TODOs
 
 ☑️ Темная тема
 
