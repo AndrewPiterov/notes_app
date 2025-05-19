@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:note_app/features/notes/data/notes_cache.dart';
 
 import '../models/note_model.dart';
 
@@ -6,6 +9,8 @@ sealed class NoteEvent {}
 
 // states
 sealed class NoteState {}
+
+final class GetNotesEvent extends NoteEvent {}
 
 final class NewNoteCreated extends NoteEvent {
   NewNoteCreated(this.note);
@@ -26,26 +31,53 @@ final class NoteDeleted extends NoteEvent {
 }
 
 class NotesBloc extends Bloc<NoteEvent, List<NoteModel>> {
-  NotesBloc() : super([]) {
-    on<NewNoteCreated>((event, emit) {
-      emit([...state, event.note]);
-    });
+  final INotesCache _cache;
 
-    on<NoteUpdated>((event, emit) {
-      final updatedNotes =
-          state.map((note) {
-            if (note.id == event.note.id) {
-              return event.note;
-            }
-            return note;
-          }).toList();
-      emit(updatedNotes);
-    });
+  NotesBloc({INotesCache? cache})
+    : _cache = cache ?? GetIt.I<INotesCache>(),
+      super([]) {
+    on<GetNotesEvent>(_getNotes);
 
-    on<NoteDeleted>((event, emit) {
-      final updatedNotes =
-          state.where((note) => note.id != event.note.id).toList();
-      emit(updatedNotes);
-    });
+    on<NewNoteCreated>(_addNewNote);
+
+    on<NoteUpdated>(_updateNote);
+
+    on<NoteDeleted>(_deleteNote);
+  }
+
+  FutureOr<void> _deleteNote(NoteDeleted event, Emitter<List<NoteModel>> emit) {
+    final updatedNotes =
+        state.where((note) => note.id != event.note.id).toList();
+    _cache.saveNotes(updatedNotes);
+    emit(updatedNotes);
+  }
+
+  FutureOr<void> _updateNote(NoteUpdated event, Emitter<List<NoteModel>> emit) {
+    final updatedNotes =
+        state.map((note) {
+          if (note.id == event.note.id) {
+            return event.note;
+          }
+          return note;
+        }).toList();
+    _cache.saveNotes(updatedNotes);
+    emit(updatedNotes);
+  }
+
+  Future<void> _addNewNote(
+    NewNoteCreated event,
+    Emitter<List<NoteModel>> emit,
+  ) async {
+    final newList = [...state, event.note];
+    _cache.saveNotes(newList);
+    emit(newList);
+  }
+
+  Future<void> _getNotes(
+    GetNotesEvent event,
+    Emitter<List<NoteModel>> emit,
+  ) async {
+    final notes = await _cache.getNotes();
+    emit(notes);
   }
 }
